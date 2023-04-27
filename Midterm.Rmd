@@ -1,0 +1,591 @@
+---
+title: "Untitled"
+author: "Elliot Metviner"
+date: '2023-04-27'
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+
+## 2021 Data
+math <- read.csv("math.csv")
+RLA <- read.csv("RLA.csv")
+
+RLA_2021 <- RLA %>%
+  filter(STNAM == "CONNECTICUT") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+RLA_2021$LEANM = toupper(RLA_2021$LEANM)
+
+RLA_2021$PCTPROF_2021<- substr(RLA_2021$PCTPROF, 1, 2)
+
+RLA_2021_wide <- RLA_2021 %>%
+  mutate(PCTPROF_2021 = as.numeric(PCTPROF_2021))
+
+math_2021 <- math %>%
+  filter(STNAM == "CONNECTICUT") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL") 
+
+math_2021$LEANM = toupper(math_2021$LEANM)
+
+math_2021$PCTPROF_2021<- substr(math_2021$PCTPROF, 1, 2)
+
+math_2021_wide <- math_2021 %>%
+  mutate(PCTPROF_2021 = as.numeric(PCTPROF_2021))
+
+## 2019 Data
+math_19 <- read.csv("math-achievement-lea-sy2018-19-long.csv")
+RLA_19 <- read.csv("rla-achievement-lea-sy2018-19-long.csv")
+
+RLA_2019 <- RLA_19 %>%
+  filter(STNAM == "CONNECTICUT") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+
+RLA_2019$PCTPROF_2019<- substr(RLA_2019$PCTPROF, 1, 2)
+RLA_2019_wide <- RLA_2019 %>%
+  mutate(PCTPROF_2019 = as.numeric(PCTPROF_2019))
+
+
+math_2019 <- math_19 %>%
+  filter(STNAM == "CONNECTICUT") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+math_2019$PCTPROF_2019<- substr(math_2019$PCTPROF, 1, 2)
+math_2019_wide <- math_2019 %>%
+  mutate(PCTPROF_2019 = as.numeric(PCTPROF_2019))
+
+## Merge math scores
+
+math_scores_wide <- merge(math_2019_wide, math_2021_wide, by.x ="LEANM", by.y = "LEANM")
+
+
+## Merge RLA Scores
+
+RLA_scores_wide <- merge(RLA_2019_wide, RLA_2021_wide, by.x ="LEANM", by.y = "LEANM")
+
+## Select colums for math wide
+
+math_scores_wide <- math_scores_wide %>%
+  select('LEANM', 'PCTPROF_2019', 'PCTPROF_2021')
+
+math_scores_wide$PCTPROF_CHANGE <- math_scores_wide$PCTPROF_2021 - math_scores_wide$PCTPROF_2019
+
+## Select colums for RLA wide
+
+
+RLA_scores_wide <- RLA_scores_wide %>%
+  select('LEANM', 'PCTPROF_2019', 'PCTPROF_2021')
+RLA_scores_wide$PCTPROF_CHANGE <- RLA_scores_wide$PCTPROF_2021 - RLA_scores_wide$PCTPROF_2019
+
+## Map Plots
+
+## math long data 
+
+math_2019_long <- math_2019 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2019))
+
+math_2019_long <- math_2019_long %>%
+  select('SCHOOL_YEAR', 'LEANM', 'PCTPROF', 'STNAM')
+
+math_2021_long <- math_2021 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2021))
+
+math_2021_long <- math_2021_long %>%
+  select('SCHOOL_YEAR', 'LEANM', 'PCTPROF', 'STNAM')
+
+math_long <- bind_rows(math_2019_long, math_2021_long)
+
+## RLA long data
+
+RLA_2019_long <- RLA_2019 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2019))
+
+RLA_2019_long <- RLA_2019_long %>%
+  select('SCHOOL_YEAR', 'LEANM', 'PCTPROF', 'STNAM')
+
+RLA_2021_long <- RLA_2021 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2021))
+
+RLA_2021_long <- RLA_2021_long %>%
+  select('SCHOOL_YEAR', 'LEANM', 'PCTPROF', 'STNAM')
+
+RLA_long <- bind_rows(RLA_2019_long, RLA_2021_long)
+
+
+
+## CT and Nationwide Average Math
+Math_CTAV_2019 <- math_2019_long %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+Math_CTAV_2019$Year <- "2019"
+
+Math_CTAV_2021 <- math_2021_long %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+Math_CTAV_2021$Year <- "2021"
+
+Math_AV <- bind_rows(Math_CTAV_2019, Math_CTAV_2021)
+
+math_AV2019 <- math_19 %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+math_AV2019$PCTPROF<- substr(math_AV2019$PCTPROF, 1, 2)
+math_AV2019 <- math_AV2019 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF)) %>%
+  filter(PCTPROF != "NA")
+
+math_AV2019 <- math_AV2019 %>%
+  group_by(SCHOOL_YEAR) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+math_AV2019 <- math_AV2019 %>%
+  select('PCT_PROF') 
+math_AV2019$Year <- "2019"
+math_AV2019$STNAM <- "All"
+
+Math_AV <- bind_rows(Math_AV, math_AV2019)
+
+math_AV2021 <- math %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+math_AV2021$PCTPROF<- substr(math_AV2021$PCTPROF, 1, 2)
+math_AV2021 <- math_AV2021 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF)) %>%
+  filter(PCTPROF != "NA")
+
+math_AV2021 <- math_AV2021 %>%
+  group_by(SCHOOL_YEAR) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+math_AV2021 <- math_AV2021 %>%
+  select('PCT_PROF') 
+math_AV2021$Year <- "2021"
+math_AV2021$STNAM <- "All"
+
+Math_AV <- bind_rows(Math_AV, math_AV2021)
+
+
+Math_AV <- Math_AV %>%
+  mutate(Year = as.numeric(Year))
+
+
+## Math plot Compared to total U.S average
+
+Math_AV_Plot <- ggplot(Math_AV) +
+  geom_line(aes(x=Year, y=PCT_PROF, group=STNAM, color=STNAM)) +
+  theme_minimal() +
+  scale_y_continuous(breaks=c(35,40,45,50),
+                     labels=c("35%", "40%","45%", "50%"),
+                     limits =c(32, 50)) +
+  scale_x_continuous(breaks =c(2019, 2021),
+                     labels=c("2018-2019", "2020-2021"),
+                     limits=c(2018.7, 2021.3)) +
+  annotate(geom="text", x= 2019.2, y=41, 
+           label="U.S Average", color="red", size=5) +
+  annotate(geom="text", x= 2019.5, y= 43.5, 
+           label="Conneticut Average", color="#008080", size=5) +
+  annotate(geom="text", x=2020.7, y=38,
+           label="(Decreased by approximatly 3.2%)", color="red", size=3.5) +
+  annotate(geom="text", x=2020.8, y=41,
+           label="(Decreased by approximatly 3.9%)", color="#008080", size=3.5) +
+  labs(title = "Conneticut Math Scores Compared to Country Average",
+       y= "% of Students with Proficient Score") +
+  theme(legend.position= "none",
+        plot.subtitle = element_text(hjust = 0), 
+        plot.caption = element_text(hjust = 1),
+        plot.title = element_text(hjust=.5))
+
+Math_AV_Plot
+## CT and nationwide Average RLA
+RLA_CTAV_2019 <- RLA_2019_long %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_CTAV_2019$Year <- "2019"
+
+RLA_CTAV_2021 <- RLA_2021_long %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_CTAV_2021$Year <- "2021"
+
+RLA_AV <- bind_rows(RLA_CTAV_2019, RLA_CTAV_2021)
+
+RLA_AV2019 <- RLA_19 %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+RLA_AV2019$PCTPROF<- substr(RLA_AV2019$PCTPROF, 1, 2)
+RLA_AV2019 <- RLA_AV2019 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF)) %>%
+  filter(PCTPROF != "NA")
+
+RLA_AV2019 <- RLA_AV2019 %>%
+  group_by(SCHOOL_YEAR) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_AV2019 <- RLA_AV2019 %>%
+  select('PCT_PROF') 
+RLA_AV2019$Year <- "2019"
+RLA_AV2019$STNAM <- "All"
+
+RLA_AV <- bind_rows(RLA_AV, RLA_AV2019)
+
+RLA_AV2021 <- RLA %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+RLA_AV2021$PCTPROF<- substr(RLA_AV2021$PCTPROF, 1, 2)
+RLA_AV2021 <- RLA_AV2021 %>%
+  mutate(PCTPROF = as.numeric(PCTPROF)) %>%
+  filter(PCTPROF != "NA")
+
+RLA_AV2021 <- RLA_AV2021 %>%
+  group_by(SCHOOL_YEAR) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_AV2021 <- RLA_AV2021 %>%
+  select('PCT_PROF') 
+RLA_AV2021$Year <- "2021"
+RLA_AV2021$STNAM <- "All"
+
+RLA_AV <- bind_rows(RLA_AV, RLA_AV2021)
+
+RLA_AV <- RLA_AV %>%
+  mutate(Year = as.numeric(Year))
+
+## RLA Plot compared to U.S Averages
+
+
+RLA_AV_PLOT <- ggplot(RLA_AV) +
+  geom_line(aes(x=Year, y=PCT_PROF, group=STNAM, color=STNAM)) +
+  theme_minimal() +
+  scale_y_continuous(breaks=c( 40, 45, 50, 55, 60, 65, 70),
+                     labels=c("40%", "45%", "50%", "55%", "60%", "65%",
+                              "70%"),
+                     limits =c(45, 70)) +
+  scale_x_continuous(breaks =c(2019, 2021),
+                     labels=c("2018-2019", "2020-2021"),
+                     limits=c(2018.7, 2021.3)) +
+  annotate(geom="text", x= 2019.2, y= 55, 
+           label="U.S Average", color="red", size=5) +
+  annotate(geom="text", x= 2019.2, y= 67, 
+           label="Conneticut Average", color="#008080", size=5) +
+  annotate(geom="text", x=2021, y=61,
+           label="(Decreased by approximatly 3.8%)", color="#008080", size=3.5) +
+  annotate(geom="text", x=2021, y=50,
+           label="(Decreased by approximatly 3.1%)", color="red", size=3.5) +
+  labs(title = "Connecticut RLA Scores Compared to Country Average",
+       y= "% of students with a proficient score",
+       x="") +
+  theme(legend.position= "none",
+        plot.subtitle = element_text(hjust = 0), 
+        plot.caption = element_text(hjust = 1),
+        plot.title = element_text(hjust=.5))
+
+
+RLA_AV_PLOT
+## Map plot
+
+
+## Conneticut compared to the tri state area
+
+## NY 2019
+math_19_ny <- math_19 %>%
+  filter(STNAM == "NEW YORK") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+math_19_ny$PCTPROF_2019<- substr(math_19_ny$PCTPROF, 1, 2)
+
+
+math_19_ny <- math_19_ny %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2019)) %>%
+  filter(PCTPROF != "NA")
+
+Math_NYAV_2019 <- math_19_ny %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+Math_NYAV_2019$Year <- "2019"
+
+RLA_19_ny <- RLA_19 %>%
+  filter(STNAM == "NEW YORK") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+RLA_19_ny$PCTPROF_2019<- substr(RLA_19_ny$PCTPROF, 1, 2)
+
+
+
+RLA_19_ny <- RLA_19_ny %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2019)) %>%
+  filter(PCTPROF != "NA")
+
+RLA_NYAV_2019 <- RLA_19_ny %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_NYAV_2019$Year <- "2019"
+
+## NJ 2019
+
+math_19_nj <- math_19 %>%
+  filter(STNAM == "NEW JERSEY") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+math_19_nj$PCTPROF_2019<- substr(math_19_nj$PCTPROF, 1, 2)
+
+
+math_19_nj <- math_19_nj %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2019)) %>%
+  filter(PCTPROF != "NA")
+
+Math_NJAV_2019 <- math_19_nj %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+Math_NJAV_2019$Year <- "2019"
+
+RLA_19_nj <- RLA_19 %>%
+  filter(STNAM == "NEW JERSEY") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+RLA_19_nj$PCTPROF_2019<- substr(RLA_19_nj$PCTPROF, 1, 2)
+
+
+RLA_19_nj <- RLA_19_nj %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2019)) %>%
+  filter(PCTPROF != "NA")
+
+RLA_NJAV_2019 <- RLA_19_nj %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_NJAV_2019$Year <- "2019"
+
+## Merging data sets for 2019 with viz
+
+RLA_tri_data_19 <- bind_rows(RLA_NJAV_2019, RLA_NYAV_2019)
+RLA_tri_data_19 <- bind_rows(RLA_tri_data_19, RLA_CTAV_2019)
+
+Math_tri_data_19 <- bind_rows(Math_NJAV_2019, Math_NYAV_2019)
+Math_tri_data_19 <- bind_rows(Math_tri_data_19, Math_CTAV_2019)
+
+
+
+RLA_bar_19<- ggplot(RLA_tri_data_19) +
+  geom_col((aes(x=STNAM, y=PCT_PROF, fill=STNAM))) +
+  theme_minimal() +
+  scale_fill_manual(values=c("#008080", "#8B8000", "forestgreen")) +
+  labs(title = "2018-2019 Connecticut RLA Scores Compared to the Tri State Area",
+       y= "% of students who attained proficency",
+       x="") +
+  scale_y_continuous(breaks =c(0, 20, 40, 60, 80, 100),
+                     labels=c("0%", "20%", "40%", "60%", "80%", "100%"),
+                     limits=c(0, 100)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position= "none",
+        plot.subtitle = element_text(hjust = 0), 
+        plot.caption = element_text(hjust = 1),
+        plot.title = element_text(hjust=.5))
+
+
+math_bar_19<- ggplot(Math_tri_data_19) +
+  geom_col((aes(x=STNAM, y=PCT_PROF, fill=STNAM))) +
+  scale_fill_manual(values=c("#008080", "#8B8000", "forestgreen")) +
+  scale_y_continuous(breaks =c(0, 20, 40, 60, 80, 100),
+                     labels=c("0%", "20%", "40%", "60%", "80%", "100%"),
+                     limits=c(0, 100)) +
+  labs(title = "2018-2019 Connecticut Math Scores Compared to the Tri State Area",
+       y= "% of students who attained proficency",
+       x="") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position= "none",
+        plot.subtitle = element_text(hjust = 0), 
+        plot.caption = element_text(hjust = 1),
+        plot.title = element_text(hjust=.5))
+
+
+
+## NY 2021
+
+math_21_ny <- math %>%
+  filter(STNAM == "NEW YORK") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+math_21_ny$PCTPROF_2021<- substr(math_21_ny$PCTPROF, 1, 2)
+
+
+math_21_ny <- math_21_ny %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2021)) %>%
+  filter(PCTPROF != "NA")
+
+Math_NYAV_2021 <- math_21_ny %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+Math_NYAV_2021$Year <- "2021"
+
+RLA_21_ny <- RLA %>%
+  filter(STNAM == "NEW YORK") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+RLA_21_ny$PCTPROF_21<- substr(RLA_21_ny$PCTPROF, 1, 2)
+
+
+RLA_21_ny <- RLA_21_ny %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_21)) %>%
+  filter(PCTPROF != "NA")
+
+RLA_NYAV_2021 <- RLA_21_ny %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_NYAV_2021$Year <- "2021"
+
+## NJ 2021
+
+
+math_21_nj <- math %>%
+  filter(STNAM == "NEW JERSEY") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+math_21_nj$PCTPROF_2021<- substr(math_21_nj$PCTPROF, 1, 2)
+
+
+math_21_nj <- math_21_nj %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2021)) %>%
+  filter(PCTPROF != "NA")
+
+Math_NJAV_2021 <- math_21_nj %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+Math_NJAV_2021$Year <- "2021"
+
+RLA_21_nj <- RLA %>%
+  filter(STNAM == "NEW JERSEY") %>%
+  filter(GRADE == "HS") %>%
+  filter(NUMVALID > 50) %>%
+  filter(CATEGORY == "ALL")
+
+RLA_21_nj$PCTPROF_2021<- substr(RLA_21_nj$PCTPROF, 1, 2)
+
+
+RLA_21_nj <- RLA_21_nj %>%
+  mutate(PCTPROF = as.numeric(PCTPROF_2021)) %>%
+  filter(PCTPROF != "NA")
+
+RLA_NJAV_2021 <- RLA_21_nj %>%
+  group_by(STNAM) %>%
+  summarize(PCT_PROF = mean(PCTPROF))
+
+RLA_NJAV_2021$Year <- "2021"
+
+## Merge 2021 data
+
+RLA_tri_data_21 <- bind_rows(RLA_NJAV_2021, RLA_NYAV_2021)
+RLA_tri_data_21 <- bind_rows(RLA_tri_data_21, RLA_CTAV_2021)
+
+Math_tri_data_21 <- bind_rows(Math_NJAV_2021, Math_NYAV_2021)
+Math_tri_data_21 <- bind_rows(Math_tri_data_21, Math_CTAV_2021)
+
+
+
+RLA_bar_21<- ggplot(RLA_tri_data_21) +
+  geom_col((aes(x=STNAM, y=PCT_PROF, fill=STNAM))) +
+  theme_minimal() +
+  scale_fill_manual(values=c("#008080", "#8B8000", "forestgreen")) +
+  scale_y_continuous(breaks =c(0, 20, 40, 60, 80, 100),
+                     labels=c("0%", "20%", "40%", "60%", "80%", "100%"),
+                     limits=c(0, 100)) +
+  annotate(geom="text", x="CONNECTICUT", y=68,
+           label="(Decreased by approximately 4%)", color="#008080", size=3.5) +
+  annotate(geom="text", x="NEW JERSEY", y=58,
+           label="(Decreased by approximatly 4%)", color="#8B8000", size=3.5) +
+  annotate(geom="text", x="NEW YORK", y=86,
+           label="(Decreased by approximatly 10%)", color="forestgreen", size=3.5) +
+  labs(title = "2020-2021 Connecticut RLA Scores Compared to the Tri State Area",
+       y= "% of students who attained proficency",
+       x="") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position= "none",
+        plot.subtitle = element_text(hjust = 0), 
+        plot.caption = element_text(hjust = 1),
+        plot.title = element_text(hjust=.5))
+  
+RLA_bar_21
+math_bar_21<- ggplot(Math_tri_data_21) +
+  geom_col((aes(x=STNAM, y=PCT_PROF, fill=STNAM))) +
+  scale_fill_manual(values=c("#008080", "#8B8000", "forestgreen")) +
+  scale_y_continuous(breaks =c(0, 20, 40, 60, 80, 100),
+                     labels=c("0%", "20%", "40%", "60%", "80%", "100%"),
+                     limits=c(0, 100)) +
+  annotate(geom="text", x="CONNECTICUT", y=45,
+           label="(Decreased by approximately 4%)", color="#008080", size=3.5) +
+  annotate(geom="text", x="NEW JERSEY", y=37,
+           label="(Decreased by approximatly 6%)", color="#8B8000", size=3.5) +
+annotate(geom="text", x="NEW YORK", y=94,
+         label="(Decreased by approximatly 3%)", color="forestgreen", size=3.5) +
+  labs(title = "20220-2021 Connecticut Math Scores Compared to the Tri State Area ",
+       y= "% of students who attained proficency",
+       x="") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"),
+        legend.position= "none",
+        plot.subtitle = element_text(hjust = 0), 
+        plot.caption = element_text(hjust = 1),
+        plot.title = element_text(hjust=.5))
+
+math_bar_21
+library(patchwork)
+p.dash <- (RLA_AV_PLOT + Math_AV_Plot)/(RLA_bar_19+ math_bar_19 + RLA_bar_21 + math_bar_21) +
+  plot_layout(heights=c(2,2)) +
+  plot_annotation(
+    title = 'What was the Effect of Covid on Education in Conneticut and How Does it Compare to Other States?',
+    subtitle = 'The values being analyzed are the minimum highschool RLA (Reading and Language) and Math profeciancy\nstatistics of schools that had over 50 valid entries in the 2018-2019 and 2020-2021 school years ',
+    caption = 'Source: U.S Department of Educationacademic achievement Data'
+  )
+
+ggsave(filename= "EDU-dashboard.png", plot=p.dash,
+       dpi=600, width=17, height=13)
+
+
+
+
+```
+
